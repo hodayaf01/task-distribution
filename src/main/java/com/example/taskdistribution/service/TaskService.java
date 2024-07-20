@@ -57,4 +57,28 @@ public class TaskService {
 
         serviceAgentRepository.save(agent);
     }
+
+    public void reassignTasksFromDeletedAgent(Long agentId) {
+        List<Task> tasks = taskRepository.findByAssignedAgentId(agentId);
+        List<ServiceAgent> availableAgents = serviceAgentRepository.findAll().stream()
+                .filter(ServiceAgent::isAvailable)
+                .sorted((a1, a2) -> Integer.compare(a1.getTaskCount(), a2.getTaskCount()))
+                .toList();
+
+        for (Task task : tasks) {
+            if (availableAgents.isEmpty()) {
+                task.setStatus("Pending");
+                task.setAssignedAgentId(null);
+            } else {
+                ServiceAgent agent = availableAgents.get(0);
+                task.setAssignedAgentId(agent.getId());
+                task.setStatus("Assigned");
+                agent.setTaskCount(agent.getTaskCount() + 1);
+                serviceAgentRepository.save(agent);
+
+                availableAgents.sort((a1, a2) -> Integer.compare(a1.getTaskCount(), a2.getTaskCount()));
+            }
+            taskRepository.save(task);
+        }
+    }
 }

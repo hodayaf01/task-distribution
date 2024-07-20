@@ -27,6 +27,7 @@ public class ServiceAgentService {
     }
 
     public void deleteAgent(Long id) {
+        taskService.reassignTasksFromDeletedAgent(id);
         serviceAgentRepository.deleteById(id);
     }
 
